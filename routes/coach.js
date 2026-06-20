@@ -277,4 +277,42 @@ router.delete('/clients/:id', async (req, res) => {
   }
 });
 
+// POST /api/coach/link - Link a client to a coach post-registration
+router.post('/link', async (req, res) => {
+  const { clientId, coachCode } = req.body;
+
+  if (!clientId || !coachCode) {
+    return res.status(400).json({ error: 'Client ID and Coach Code are required.' });
+  }
+
+  try {
+    // 1. Verify the coach code belongs to an active coach
+    const coachRes = await db.query(
+      "SELECT id FROM users WHERE role = 'COACH' AND coach_code = $1", 
+      [coachCode.trim().toUpperCase()]
+    );
+
+    if (coachRes.rowCount === 0) {
+      return res.status(400).json({ error: 'Invalid Coach Invite Code.' });
+    }
+
+    const assignedCoachId = coachRes.rows[0].id;
+
+    // 2. Update the client's assigned_coach_id
+    const updatedUser = await db.query(
+      "UPDATE users SET assigned_coach_id = $1 WHERE id = $2 AND role = 'CLIENT' RETURNING *",
+      [assignedCoachId, clientId]
+    );
+
+    if (updatedUser.rowCount === 0) {
+      return res.status(404).json({ error: 'Client not found or invalid role.' });
+    }
+
+    res.json(updatedUser.rows[0]);
+  } catch (err) {
+    console.error('Error linking coach:', err.message);
+    res.status(500).json({ error: 'Failed to link coach.' });
+  }
+});
+
 module.exports = router;
