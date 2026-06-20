@@ -6,11 +6,16 @@ const db = require('../db/db');
 router.post('/', async (req, res) => {
   const {
     userId,
+    log_date,
     weight,
     waist_cm,
     energy_score,
     mood_score,
-    workouts_completed = 0,
+    workout_completed = false,
+    calories_logged = 0,
+    protein_logged = 0,
+    carbs_logged = 0,
+    fats_logged = 0,
     photo_uris = []
   } = req.body;
 
@@ -62,12 +67,10 @@ router.post('/', async (req, res) => {
     }
 
     let workoutComment = '';
-    if (workouts_completed >= planFrequency) {
-      workoutComment = `Excellent adherence! You completed all ${workouts_completed} scheduled workouts this week.`;
-    } else if (workouts_completed >= Math.ceil(planFrequency / 2)) {
-      workoutComment = `Good effort. You completed ${workouts_completed} out of ${planFrequency} workouts. Let's aim for 100% next week.`;
+    if (workout_completed) {
+      workoutComment = `Great job completing your workout today!`;
     } else {
-      workoutComment = `Adherence drop: completed only ${workouts_completed} of ${planFrequency} workouts. Make sure to discuss any schedule issues with your coach.`;
+      workoutComment = `No workout logged today, remember consistency is key!`;
     }
 
     let wellnessComment = '';
@@ -82,24 +85,33 @@ router.post('/', async (req, res) => {
     // 3. Save progress log
     // Handles ON CONFLICT on (user_id, log_date) so user can overwrite their check-in for today
     const logResult = await db.query(
-      `INSERT INTO progress_logs (user_id, log_date, weight, waist_cm, energy_score, mood_score, workouts_completed, photo_uris, ai_insight)
-       VALUES ($1, CURRENT_DATE, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO progress_logs (user_id, log_date, weight, waist_cm, energy_score, mood_score, workout_completed, calories_logged, protein_logged, carbs_logged, fats_logged, photo_uris, ai_insight)
+       VALUES ($1, COALESCE($2::DATE, CURRENT_DATE), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        ON CONFLICT (user_id, log_date) DO UPDATE SET
          weight = EXCLUDED.weight,
          waist_cm = EXCLUDED.waist_cm,
          energy_score = EXCLUDED.energy_score,
          mood_score = EXCLUDED.mood_score,
-         workouts_completed = EXCLUDED.workouts_completed,
+         workout_completed = EXCLUDED.workout_completed,
+         calories_logged = EXCLUDED.calories_logged,
+         protein_logged = EXCLUDED.protein_logged,
+         carbs_logged = EXCLUDED.carbs_logged,
+         fats_logged = EXCLUDED.fats_logged,
          photo_uris = EXCLUDED.photo_uris,
          ai_insight = EXCLUDED.ai_insight
        RETURNING *`,
       [
         userId,
+        log_date || null,
         currentWeight,
         waist_cm ? parseFloat(waist_cm) : null,
         parseInt(energy_score),
         parseInt(mood_score),
-        parseInt(workouts_completed),
+        Boolean(workout_completed),
+        parseInt(calories_logged) || 0,
+        parseInt(protein_logged) || 0,
+        parseInt(carbs_logged) || 0,
+        parseInt(fats_logged) || 0,
         photo_uris,
         aiInsight
       ]
@@ -109,15 +121,8 @@ router.post('/', async (req, res) => {
     let triggeredAlerts = [];
 
     // Trigger A: Compliance Failure
-    // Completed 1 or 0 workouts when plan frequency is 3+
-    if (workouts_completed <= 1 && planFrequency >= 3) {
-      const alert = await db.query(
-        `INSERT INTO escalation_alerts (user_id, type, severity, details)
-         VALUES ($1, 'COMPLIANCE', 'MEDIUM', $2) RETURNING *`,
-        [userId, `Compliance failure: User completed only ${workouts_completed} of ${planFrequency} workouts this week.`]
-      );
-      triggeredAlerts.push(alert.rows[0]);
-    }
+    // Example: If energy and mood are low, we can't reliably calculate weekly compliance here without grouping by week.
+    // For now, we will just look at psychological risk and plateaus.
 
     // Trigger B: Psychological Risk / Extreme Burnout
     if (parseInt(energy_score) <= 3 && parseInt(mood_score) <= 3) {
@@ -139,12 +144,12 @@ router.post('/', async (req, res) => {
       const diff1 = Math.abs(log1 - log2);
       const diff2 = Math.abs(log2 - log3);
 
-      // If weight changes less than 0.2kg over 3 logs (2 intervals), and compliance is high
-      if (diff1 <= 0.2 && diff2 <= 0.2 && workouts_completed >= planFrequency - 1) {
+      // If weight changes less than 0.2kg over 3 logs (2 intervals)
+      if (diff1 <= 0.2 && diff2 <= 0.2) {
         const alert = await db.query(
           `INSERT INTO escalation_alerts (user_id, type, severity, details)
            VALUES ($1, 'PLATEAU', 'MEDIUM', $2) RETURNING *`,
-          [userId, `Plateau detected: Weight remained stable (${log3}kg -> ${log2}kg -> ${log1}kg) for 3 consecutive weeks despite high compliance.`]
+          [userId, `Plateau detected: Weight remained stable (${log3}kg -> ${log2}kg -> ${log1}kg) for 3 consecutive logs.`]
         );
         triggeredAlerts.push(alert.rows[0]);
       }
