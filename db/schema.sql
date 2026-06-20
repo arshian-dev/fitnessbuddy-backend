@@ -4,7 +4,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Drop existing tables to allow recreation of modified columns
-DROP TABLE IF EXISTS users, health_profiles, workout_plans, nutrition_plans, progress_logs, escalation_alerts, chat_logs, exercises_library, food_library CASCADE;
+DROP TABLE IF EXISTS users, health_profiles, workout_plans, nutrition_plans, progress_logs, escalation_alerts, exercises_library, food_library CASCADE;
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
