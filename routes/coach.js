@@ -315,4 +315,149 @@ router.post('/link', async (req, res) => {
   }
 });
 
+// GET /api/coach/knowledge - Retrieve ingested knowledge summary for coach
+router.get('/knowledge', async (req, res) => {
+  const coachId = req.query.coachId;
+  if (!coachId) return res.status(400).json({ error: 'Coach ID is required.' });
+
+  try {
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [coachId]);
+    if (coachRes.rowCount === 0) return res.status(404).json({ error: 'Coach not found.' });
+    
+    const trainerId = coachRes.rows[0].trainer_id;
+    if (!trainerId) return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+
+    // Group chunks by source name to get a summary
+    const result = await db.query(
+      `SELECT source_type, 
+              SPLIT_PART(source_name, ' - Part ', 1) as name,
+              COUNT(id) as chunks_count,
+              MAX(created_at) as last_updated
+       FROM knowledge_base 
+       WHERE trainer_id = $1
+       GROUP BY source_type, SPLIT_PART(source_name, ' - Part ', 1)
+       ORDER BY last_updated DESC`,
+      [trainerId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching knowledge base:', err.message);
+    res.status(500).json({ error: 'Failed to fetch knowledge base.' });
+  }
+});
+
+// POST /api/coach/knowledge/text - Add raw text note to knowledge base
+const { insertKnowledge, ingestYoutubePlaylist, ingestSingleYoutube } = require('../utils/ingestion');
+
+router.post('/knowledge/text', async (req, res) => {
+  const { coachId, title, content } = req.body;
+  if (!coachId || !title || !content) return res.status(400).json({ error: 'Coach ID, title, and content required.' });
+
+  try {
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [coachId]);
+    const trainerId = coachRes.rows[0]?.trainer_id;
+    if (!trainerId) return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+
+    const chunksCount = await insertKnowledge(trainerId, 'COACH_NOTE', title, content);
+    res.json({ success: true, message: `Successfully embedded ${chunksCount} chunks.` });
+  } catch (err) {
+    console.error('Error ingesting text:', err.message);
+    res.status(500).json({ error: 'Failed to ingest text.' });
+  }
+});
+
+// POST /api/coach/knowledge/youtube - Ingest YouTube video or playlist
+router.post('/knowledge/youtube', async (req, res) => {
+  const { coachId, url } = req.body;
+  if (!coachId || !url) return res.status(400).json({ error: 'Coach ID and YouTube URL required.' });
+
+  try {
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [coachId]);
+    const trainerId = coachRes.rows[0]?.trainer_id;
+    if (!trainerId) return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+
+    if (url.includes('playlist?list=')) {
+      // Async processing for playlist
+      ingestYoutubePlaylist(url, trainerId).catch(console.error);
+      res.json({ success: true, message: 'Playlist ingestion started in the background. Check back in a few minutes.' });
+    } else {
+      // Single video ID extraction
+      let videoId = url;
+      if (url.includes('v=')) {
+        videoId = new URL(url).searchParams.get('v');
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      }
+
+      if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL.' });
+
+      ingestSingleYoutube(videoId, trainerId).catch(console.error);
+      res.json({ success: true, message: 'Video ingestion started in the background.' });
+    }
+  } catch (err) {
+    console.error('Error triggering YouTube ingestion:', err.message);
+    res.status(500).json({ error: 'Failed to ingest YouTube content.' });
+  }
+});
+
+// Universal Upload Endpoint (Files + YouTube)
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const { ingestExcelBuffer, ingestPdfBuffer, ingestDocxBuffer } = require('../utils/ingestion');
+
+router.post('/knowledge/upload', upload.single('file'), async (req, res) => {
+  const { coachId, url } = req.body;
+  if (!coachId) return res.status(400).json({ error: 'Coach ID is required.' });
+
+  try {
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [coachId]);
+    const trainerId = coachRes.rows[0]?.trainer_id;
+    if (!trainerId) return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+
+    // Handle File Upload
+    if (req.file) {
+      const ext = req.file.originalname.split('.').pop().toLowerCase();
+      let chunksCount = 0;
+      
+      if (ext === 'xlsx' || ext === 'xls') {
+        chunksCount = await ingestExcelBuffer(req.file.buffer, req.file.originalname, trainerId);
+      } else if (ext === 'pdf') {
+        chunksCount = await ingestPdfBuffer(req.file.buffer, req.file.originalname, trainerId);
+      } else if (ext === 'docx') {
+        chunksCount = await ingestDocxBuffer(req.file.buffer, req.file.originalname, trainerId);
+      } else {
+        return res.status(400).json({ error: 'Unsupported file format. Please upload PDF, DOCX, or Excel files.' });
+      }
+
+      return res.json({ success: true, message: `Successfully embedded ${chunksCount} chunks from ${req.file.originalname}.` });
+    }
+
+    // Handle YouTube URL
+    if (url) {
+      if (url.includes('playlist?list=')) {
+        ingestYoutubePlaylist(url, trainerId).catch(console.error);
+        return res.json({ success: true, message: 'Playlist ingestion started in the background.' });
+      } else {
+        let videoId = url;
+        if (url.includes('v=')) {
+          videoId = new URL(url).searchParams.get('v');
+        } else if (url.includes('youtu.be/')) {
+          videoId = url.split('youtu.be/')[1].split('?')[0];
+        }
+        if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL.' });
+        
+        ingestSingleYoutube(videoId, trainerId).catch(console.error);
+        return res.json({ success: true, message: 'Video ingestion started in the background.' });
+      }
+    }
+
+    return res.status(400).json({ error: 'No file or URL provided.' });
+
+  } catch (err) {
+    console.error('Error during universal upload:', err.message);
+    res.status(500).json({ error: 'Failed to upload asset.' });
+  }
+});
+
 module.exports = router;

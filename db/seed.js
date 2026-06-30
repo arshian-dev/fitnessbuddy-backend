@@ -39,21 +39,26 @@ async function seed() {
       ('Plank', 'Core')
     `);
 
-    // 1. Create Coach Account
+    // 1. Get Noroze Trainer ID
+    const trainerRes = await db.query(`SELECT id FROM trainers WHERE subdomain = 'noroze' LIMIT 1`);
+    const trainerId = trainerRes.rowCount > 0 ? trainerRes.rows[0].id : null;
+
+    // 2. Create Coach Account
     console.log('Creating Coach Account...');
     const coachRes = await db.query(
-      `INSERT INTO users (name, email, role, coach_code)
-       VALUES ('Coach Salman', 'coach@test.com', 'COACH', 'DEMO-COACH') RETURNING id`
+      `INSERT INTO users (name, email, role, coach_code, trainer_id)
+       VALUES ('Noroze Sikandar', 'noroze@test.com', 'COACH', 'NOROZE-COACH', $1) RETURNING id`,
+       [trainerId]
     );
     const coachId = coachRes.rows[0].id;
     console.log(`Coach created with ID: ${coachId}`);
 
-    // 2. Create Expat Client (Low adherence, plateau, knee injury)
+    // 3. Create Expat Client (Low adherence, plateau, knee injury)
     console.log('Creating Expat Client...');
     const expatUser = await db.query(
-      `INSERT INTO users (name, email, role, assigned_coach_id)
-       VALUES ('Zarrar Ahmed', 'expat@test.com', 'CLIENT', $1) RETURNING id`,
-      [coachId]
+      `INSERT INTO users (name, email, role, assigned_coach_id, trainer_id)
+       VALUES ('Zarrar Ahmed', 'expat@test.com', 'CLIENT', $1, $2) RETURNING id`,
+      [coachId, trainerId]
     );
     const expatId = expatUser.rows[0].id;
 
@@ -112,12 +117,12 @@ async function seed() {
       [expatId]
     );
 
-    // 3. Create Pro Client (High adherence, intermediate split, progressive load)
+    // 4. Create Pro Client (High adherence, intermediate split, progressive load)
     console.log('Creating Pro Client...');
     const proUser = await db.query(
-      `INSERT INTO users (name, email, role, assigned_coach_id)
-       VALUES ('Bilal Siddiqui', 'pro@test.com', 'CLIENT', $1) RETURNING id`,
-      [coachId]
+      `INSERT INTO users (name, email, role, assigned_coach_id, trainer_id)
+       VALUES ('Bilal Siddiqui', 'pro@test.com', 'CLIENT', $1, $2) RETURNING id`,
+      [coachId, trainerId]
     );
     const proId = proUser.rows[0].id;
 
@@ -165,12 +170,12 @@ async function seed() {
     );
 
 
-    // 4. Create PCOS Client (Female with PCOS, irregular cycle, compliance warning)
+    // 5. Create PCOS Client (Female with PCOS, irregular cycle, compliance warning)
     console.log('Creating PCOS Client...');
     const pcosUser = await db.query(
-      `INSERT INTO users (name, email, role, assigned_coach_id)
-       VALUES ('Amina Shah', 'pcos@test.com', 'CLIENT', $1) RETURNING id`,
-      [coachId]
+      `INSERT INTO users (name, email, role, assigned_coach_id, trainer_id)
+       VALUES ('Amina Shah', 'pcos@test.com', 'CLIENT', $1, $2) RETURNING id`,
+      [coachId, trainerId]
     );
     const pcosId = pcosUser.rows[0].id;
 

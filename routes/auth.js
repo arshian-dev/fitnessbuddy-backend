@@ -4,7 +4,7 @@ const db = require('../db/db');
 
 // Register a new user
 router.post('/register', async (req, res) => {
-  const { name, email, role, coachCode } = req.body;
+  const { name, email, role, coachCode, trainerId } = req.body;
 
   if (!name || !email || !role) {
     return res.status(400).json({ error: 'Name, email, and role are required.' });
@@ -33,8 +33,8 @@ router.post('/register', async (req, res) => {
     }
 
     const result = await db.query(
-      'INSERT INTO users (name, email, role, coach_code, assigned_coach_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [name, email, role.toUpperCase(), generatedCoachCode, assignedCoachId]
+      'INSERT INTO users (trainer_id, name, email, role, coach_code, assigned_coach_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [trainerId || null, name, email, role.toUpperCase(), generatedCoachCode, assignedCoachId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

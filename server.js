@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +16,7 @@ const profileRouter = require('./routes/profile');
 const checkinsRouter = require('./routes/checkins');
 const coachRouter = require('./routes/coach');
 const chatRouter = require('./routes/chat');
+const knowledgeRouter = require('./routes/knowledge');
 
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
@@ -23,6 +24,7 @@ app.use('/api/checkins', checkinsRouter);
 app.use('/api/coach', coachRouter); // roster and resolvers are mapped here
 app.use('/api/plans', coachRouter);  // plan overrides are mapped here as well
 app.use('/api/chat', chatRouter);
+app.use('/api/knowledge', knowledgeRouter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
