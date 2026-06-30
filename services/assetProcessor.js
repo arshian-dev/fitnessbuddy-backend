@@ -107,24 +107,50 @@ async function processFile(fileBuffer, originalName, mimeType, trainerId) {
 
 async function processYoutubeLink(url, trainerId) {
   try {
-    const transcripts = await YoutubeTranscript.fetchTranscript(url);
-    if (!transcripts || transcripts.length === 0) {
-      throw new Error('No transcript found for this video.');
-    }
-    const textData = transcripts.map(t => t.text).join(' ');
+    let videoIds = [];
     
-    // Attempt to extract video ID for a nice name
-    let videoId = url.split('v=')[1];
-    if (videoId) {
-      const ampersandPosition = videoId.indexOf('&');
-      if (ampersandPosition !== -1) {
-        videoId = videoId.substring(0, ampersandPosition);
+    // If it's a playlist, extract video IDs
+    if (url.includes('playlist?list=')) {
+      const response = await fetch(url);
+      const html = await response.text();
+      const videoIdRegex = /"videoId":"([^"]+)"/g;
+      const ids = new Set();
+      let match;
+      while ((match = videoIdRegex.exec(html)) !== null) {
+          ids.add(match[1]);
       }
+      videoIds = Array.from(ids).slice(0, 5); // Limit to 5 videos for sync response to avoid Vercel timeout
     } else {
-      videoId = 'video';
+      // Single video ID extraction
+      let videoId = url;
+      if (url.includes('v=')) {
+        videoId = new URL(url).searchParams.get('v');
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      }
+      if (!videoId) throw new Error('Invalid YouTube URL');
+      videoIds = [videoId];
+    }
+
+    let allResults = [];
+    for (const vId of videoIds) {
+      try {
+        const transcripts = await YoutubeTranscript.fetchTranscript(vId);
+        if (transcripts && transcripts.length > 0) {
+          const textData = transcripts.map(t => t.text).join(' ');
+          const results = await processTextAndSave(trainerId, 'YOUTUBE_VIDEO', `YouTube - ${vId}`, textData);
+          allResults = allResults.concat(results);
+        }
+      } catch (err) {
+        console.error(`Failed to process video ${vId}:`, err.message);
+      }
     }
     
-    return await processTextAndSave(trainerId, 'YOUTUBE_VIDEO', `YouTube - ${videoId}`, textData);
+    if (allResults.length === 0) {
+      throw new Error('No transcripts found for the provided YouTube link.');
+    }
+    
+    return allResults;
   } catch (error) {
     console.error('YouTube processing error:', error);
     throw error;
