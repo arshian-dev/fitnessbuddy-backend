@@ -7,7 +7,7 @@ const { OpenAI } = require('openai');
 const db = require('../db/db');
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'MISSING_API_KEY',
 });
 
 async function getEmbedding(text) {
