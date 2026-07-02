@@ -1,35 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { processFile, processYoutubeLink } = require('../services/assetProcessor');
+const { processFile } = require('../services/assetProcessor');
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB max limit
 });
 
-// POST /api/knowledge/upload - Upload file or add youtube link
+// POST /api/knowledge/upload - Upload file
 router.post('/upload', upload.single('file'), async (req, res) => {
-  const { trainerId, youtubeUrl } = req.body;
+  const { trainerId } = req.body;
   const file = req.file;
 
   if (!trainerId) {
     return res.status(400).json({ error: 'Trainer ID is required.' });
   }
 
-  if (!file && !youtubeUrl) {
-    return res.status(400).json({ error: 'Please provide either a file or a YouTube URL.' });
+  if (!file) {
+    return res.status(400).json({ error: 'Please provide a file to upload.' });
   }
 
   try {
-    let results = [];
-    if (file) {
-      console.log(`Processing file: ${file.originalname} for trainer: ${trainerId}`);
-      results = await processFile(file.buffer, file.originalname, file.mimetype, trainerId);
-    } else if (youtubeUrl) {
-      console.log(`Processing YouTube link: ${youtubeUrl} for trainer: ${trainerId}`);
-      results = await processYoutubeLink(youtubeUrl, trainerId);
-    }
+    console.log(`Processing file: ${file.originalname} for trainer: ${trainerId}`);
+    let results = await processFile(file.buffer, file.originalname, file.mimetype, trainerId);
     
     // We return the transcripts (chunks) so the client can preview them without saving the raw file.
     const chunks = results.map(r => ({

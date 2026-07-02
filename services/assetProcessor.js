@@ -7,7 +7,6 @@ if (typeof global.ImageData === 'undefined') global.ImageData = class ImageData 
 
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
-const { YoutubeTranscript } = require('youtube-transcript');
 const { OpenAI } = require('openai');
 const db = require('../db/db');
 
@@ -23,23 +22,27 @@ async function getEmbedding(text) {
   return response.data[0].embedding;
 }
 
-// Simple chunking function to respect context windows
+// Smart overlapping chunking function to maintain context
 function chunkText(text, maxChars = 2000) {
   const chunks = [];
   let currentChunk = '';
+  let previousSentence = '';
   // Split by sentences roughly
   const sentences = text.split(/([.?!])\s+/);
   
   for (let i = 0; i < sentences.length; i += 2) {
-      const sentence = sentences[i] + (sentences[i+1] || '');
+      const sentence = sentences[i] + (sentences[i+1] || '') + ' ';
       if ((currentChunk.length + sentence.length) > maxChars && currentChunk.length > 0) {
-          chunks.push(currentChunk);
-          currentChunk = '';
+          chunks.push(currentChunk.trim());
+          // Overlap: Start the next chunk with the previous sentence
+          currentChunk = previousSentence + sentence;
+      } else {
+          currentChunk += sentence;
       }
-      currentChunk += sentence + ' ';
+      previousSentence = sentence;
   }
   if (currentChunk.trim().length > 0) {
-      chunks.push(currentChunk);
+      chunks.push(currentChunk.trim());
   }
   return chunks;
 }
@@ -105,59 +108,7 @@ async function processFile(fileBuffer, originalName, mimeType, trainerId) {
   }
 }
 
-async function processYoutubeLink(url, trainerId) {
-  try {
-    let videoIds = [];
-    
-    // If it's a playlist, extract video IDs
-    if (url.includes('playlist?list=')) {
-      const response = await fetch(url);
-      const html = await response.text();
-      const videoIdRegex = /"videoId":"([^"]+)"/g;
-      const ids = new Set();
-      let match;
-      while ((match = videoIdRegex.exec(html)) !== null) {
-          ids.add(match[1]);
-      }
-      videoIds = Array.from(ids).slice(0, 5); // Limit to 5 videos for sync response to avoid Vercel timeout
-    } else {
-      // Single video ID extraction
-      let videoId = url;
-      if (url.includes('v=')) {
-        videoId = new URL(url).searchParams.get('v');
-      } else if (url.includes('youtu.be/')) {
-        videoId = url.split('youtu.be/')[1].split('?')[0];
-      }
-      if (!videoId) throw new Error('Invalid YouTube URL');
-      videoIds = [videoId];
-    }
-
-    let allResults = [];
-    for (const vId of videoIds) {
-      try {
-        const transcripts = await YoutubeTranscript.fetchTranscript(vId);
-        if (transcripts && transcripts.length > 0) {
-          const textData = transcripts.map(t => t.text).join(' ');
-          const results = await processTextAndSave(trainerId, 'YOUTUBE_VIDEO', `YouTube - ${vId}`, textData);
-          allResults = allResults.concat(results);
-        }
-      } catch (err) {
-        console.error(`Failed to process video ${vId}:`, err.message);
-      }
-    }
-    
-    if (allResults.length === 0) {
-      throw new Error('No transcripts found for the provided YouTube link.');
-    }
-    
-    return allResults;
-  } catch (error) {
-    console.error('YouTube processing error:', error);
-    throw error;
-  }
-}
-
 module.exports = {
   processFile,
-  processYoutubeLink
+  processTextAndSave
 };
