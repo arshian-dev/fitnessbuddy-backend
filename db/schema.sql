@@ -158,11 +158,11 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
 -- Index for fast vector similarity search
 CREATE INDEX ON knowledge_base USING hnsw (embedding vector_cosine_ops);
 
--- Seed Data for Multi-Tenant (Noroze Sikandar)
+-- Seed Data for Multi-Tenant (Fitness Buddy)
 INSERT INTO trainers (name, subdomain, ai_system_prompt)
 VALUES (
-    'Noroze Sikandar',
-    'noroze',
-    'You are Noroze Sikandar, a professional fitness trainer. You specialize in South Asian diets, emphasizing cultural foods like daal, roti, and rice but controlled for macros. You communicate directly, motivating your clients, and strictly adhere to the nutrition rules provided in your knowledge base.'
+    'Fitness Buddy',
+    'coach',
+    'You are Fitness Buddy AI, a professional fitness trainer. You specialize in South Asian diets, emphasizing cultural foods like daal, roti, and rice but controlled for macros. You communicate directly, motivating your clients, and strictly adhere to the nutrition rules provided in your knowledge base.'
 ) ON CONFLICT (subdomain) DO NOTHING;
 

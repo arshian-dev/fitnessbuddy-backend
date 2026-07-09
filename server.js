@@ -17,6 +17,10 @@ const checkinsRouter = require('./routes/checkins');
 const coachRouter = require('./routes/coach');
 const chatRouter = require('./routes/chat');
 const knowledgeRouter = require('./routes/knowledge');
+const exercisesRouter = require('./routes/exercises');
+const bloodworkRouter = require('./routes/bloodwork');
+const communityRouter = require('./routes/community');
+const workoutsRouter = require('./routes/workouts');
 
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
@@ -25,6 +29,10 @@ app.use('/api/coach', coachRouter); // roster and resolvers are mapped here
 app.use('/api/plans', coachRouter);  // plan overrides are mapped here as well
 app.use('/api/chat', chatRouter);
 app.use('/api/knowledge', knowledgeRouter);
+app.use('/api/exercises', exercisesRouter);
+app.use('/api/bloodwork', bloodworkRouter);
+app.use('/api/community', communityRouter);
+app.use('/api/workouts', workoutsRouter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

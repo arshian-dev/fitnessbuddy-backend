@@ -39,15 +39,24 @@ async function seed() {
       ('Plank', 'Core')
     `);
 
-    // 1. Get Noroze Trainer ID
-    const trainerRes = await db.query(`SELECT id FROM trainers WHERE subdomain = 'noroze' LIMIT 1`);
+    // 1. Ensure Coach Trainer Tenant Exists and Get its ID
+    await db.query(`
+      INSERT INTO trainers (name, subdomain, ai_system_prompt)
+      VALUES (
+          'Fitness Buddy',
+          'coach',
+          'You are Fitness Buddy AI, a professional fitness trainer. You specialize in South Asian diets, emphasizing cultural foods like daal, roti, and rice but controlled for macros. You communicate directly, motivating your clients, and strictly adhere to the nutrition rules provided in your knowledge base.'
+      ) ON CONFLICT (subdomain) DO NOTHING;
+    `);
+
+    const trainerRes = await db.query(`SELECT id FROM trainers WHERE subdomain = 'coach' LIMIT 1`);
     const trainerId = trainerRes.rowCount > 0 ? trainerRes.rows[0].id : null;
 
     // 2. Create Coach Account
     console.log('Creating Coach Account...');
     const coachRes = await db.query(
       `INSERT INTO users (name, email, role, coach_code, trainer_id)
-       VALUES ('Noroze Sikandar', 'noroze@test.com', 'COACH', 'NOROZE-COACH', $1) RETURNING id`,
+       VALUES ('Fitness Buddy Coach', 'coach@test.com', 'COACH', 'FITNESS-COACH', $1) RETURNING id`,
        [trainerId]
     );
     const coachId = coachRes.rows[0].id;

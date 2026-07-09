@@ -167,16 +167,10 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    // For nutrition plans, we can insert or update. Let's do INSERT or overwrite
+    // For nutrition plans, we insert a new record to maintain history
     const nutritionResult = await db.query(
       `INSERT INTO nutrition_plans (user_id, calories, protein, carbs, fats, meal_templates)
        VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (id) DO UPDATE SET
-         calories = EXCLUDED.calories,
-         protein = EXCLUDED.protein,
-         carbs = EXCLUDED.carbs,
-         fats = EXCLUDED.fats,
-         meal_templates = EXCLUDED.meal_templates
        RETURNING *`,
       [
         userId,

@@ -10,7 +10,7 @@ const upload = multer({
 
 // POST /api/knowledge/upload - Upload file
 router.post('/upload', upload.single('file'), async (req, res) => {
-  const { trainerId } = req.body;
+  const { trainerId } = req.body; // This is actually the user.id from the frontend
   const file = req.file;
 
   if (!trainerId) {
@@ -22,8 +22,16 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 
   try {
-    console.log(`Processing file: ${file.originalname} for trainer: ${trainerId}`);
-    let results = await processFile(file.buffer, file.originalname, file.mimetype, trainerId);
+    const db = require('../db/db');
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [trainerId]);
+    const actualTrainerId = coachRes.rows[0]?.trainer_id;
+    
+    if (!actualTrainerId) {
+      return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+    }
+
+    console.log(`Processing file: ${file.originalname} for trainer: ${actualTrainerId}`);
+    let results = await processFile(file.buffer, file.originalname, file.mimetype, actualTrainerId);
     
     // We return the transcripts (chunks) so the client can preview them without saving the raw file.
     const chunks = results.map(r => ({

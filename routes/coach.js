@@ -119,42 +119,6 @@ router.post('/override', async (req, res) => {
   }
 });
 
-// POST /api/plans/revert - Revert to latest coach prescribed workout plan
-router.post('/revert', async (req, res) => {
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ error: 'User ID is required.' });
-
-  try {
-    const coachPlanRes = await db.query(
-      `SELECT * FROM workout_plans WHERE user_id = $1 AND generated_by = 'COACH' ORDER BY version DESC LIMIT 1`,
-      [userId]
-    );
-    
-    if (coachPlanRes.rowCount === 0) {
-      return res.status(400).json({ error: 'No coach prescribed plan found to revert to.' });
-    }
-
-    const coachPlan = coachPlanRes.rows[0];
-
-    const lastPlan = await db.query(
-      'SELECT version FROM workout_plans WHERE user_id = $1 ORDER BY version DESC LIMIT 1',
-      [userId]
-    );
-    const nextVersion = lastPlan.rowCount > 0 ? lastPlan.rows[0].version + 1 : 1;
-
-    const result = await db.query(
-      `INSERT INTO workout_plans (user_id, split, frequency, exercises, progression_scheme, generated_by, version)
-       VALUES ($1, $2, $3, $4, $5, 'COACH', $6) RETURNING *`,
-      [userId, coachPlan.split, coachPlan.frequency, JSON.stringify(coachPlan.exercises), coachPlan.progression_scheme, nextVersion]
-    );
-
-    res.json({ success: true, workoutPlan: result.rows[0] });
-  } catch (err) {
-    console.error('Error reverting plan:', err.message);
-    res.status(500).json({ error: 'Failed to revert plan.' });
-  }
-});
-
 // POST /api/coach/resolve-alert - Resolve escalation alert
 router.post('/resolve-alert', async (req, res) => {
   const { alertId } = req.body;
@@ -400,6 +364,30 @@ router.post('/knowledge/text', async (req, res) => {
   } catch (err) {
     console.error('Error ingesting text:', err.message);
     res.status(500).json({ error: 'Failed to ingest text.' });
+  }
+});
+
+// DELETE /api/coach/knowledge - Remove knowledge base items by source name
+router.delete('/knowledge', async (req, res) => {
+  const { coachId, name } = req.body;
+  if (!coachId || !name) return res.status(400).json({ error: 'Coach ID and source name required.' });
+
+  try {
+    const coachRes = await db.query('SELECT trainer_id FROM users WHERE id = $1', [coachId]);
+    const trainerId = coachRes.rows[0]?.trainer_id;
+    if (!trainerId) return res.status(400).json({ error: 'Coach is not linked to a trainer tenant.' });
+
+    // Delete all chunks that match the base source name
+    const result = await db.query(
+      `DELETE FROM knowledge_base 
+       WHERE trainer_id = $1 AND SPLIT_PART(source_name, ' - Part ', 1) = $2`,
+      [trainerId, name]
+    );
+
+    res.json({ success: true, message: `Successfully removed ${result.rowCount} chunks.`, deletedCount: result.rowCount });
+  } catch (err) {
+    console.error('Error removing knowledge base item:', err.message);
+    res.status(500).json({ error: 'Failed to remove knowledge base item.' });
   }
 });
 

@@ -43,7 +43,13 @@ router.post('/', async (req, res) => {
         nutritionText = `Calories: ${n.calories} kcal, Protein: ${n.protein}g, Carbs: ${n.carbs}g, Fats: ${n.fats}g, Meal Schedule: ${JSON.stringify(templates)}`;
       }
 
-      clientContext = `[Client Bio: ${profileText}] [Active Workout Program: ${workoutText}] [Active Diet Targets: ${nutritionText}]`;
+      const bloodworkRes = await db.query('SELECT ai_analysis_summary FROM bloodwork_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]);
+      let bloodworkText = 'none';
+      if (bloodworkRes.rowCount > 0) {
+        bloodworkText = bloodworkRes.rows[0].ai_analysis_summary;
+      }
+
+      clientContext = `[Client Bio: ${profileText}] [Active Workout Program: ${workoutText}] [Active Diet Targets: ${nutritionText}] [Latest Bloodwork Analysis: ${bloodworkText}]`;
     } catch (e) {
       console.error('Failed to fetch comprehensive client context for chat:', e.message);
     }
@@ -84,7 +90,7 @@ router.post('/', async (req, res) => {
 
       const embeddingStr = `[${queryEmbedding.join(',')}]`;
       const kbRes = await db.query(
-        'SELECT content, source_name FROM knowledge_base WHERE trainer_id = $1 ORDER BY embedding <=> $2 LIMIT 3',
+        'SELECT content, source_name FROM knowledge_base WHERE trainer_id = $1 ORDER BY embedding <=> $2 LIMIT 10',
         [trainerId, embeddingStr]
       );
       
@@ -103,70 +109,91 @@ router.post('/', async (req, res) => {
     }
   }
 
-  // Helper function to extract and save AI workout plan updates from response text
-  const processWorkoutPlanUpdates = async (replyText) => {
-    let cleanReply = replyText;
-    const startTag = '[WORKOUT_PLAN_UPDATE]';
-    const endTag = '[/WORKOUT_PLAN_UPDATE]';
-    
-    if (replyText.includes(startTag) && replyText.includes(endTag)) {
-      try {
-        const startIdx = replyText.indexOf(startTag);
-        const endIdx = replyText.indexOf(endTag);
-        const jsonText = replyText.substring(startIdx + startTag.length, endIdx).trim();
-        cleanReply = (replyText.substring(0, startIdx) + replyText.substring(endIdx + endTag.length)).trim();
-        
-        const newPlan = JSON.parse(jsonText);
-        const { split, frequency, exercises, progression_scheme } = newPlan;
-        
-        if (userId && split && exercises) {
-          // Find current latest version
-          const lastPlan = await db.query(
-            'SELECT version FROM workout_plans WHERE user_id = $1 ORDER BY version DESC LIMIT 1',
-            [userId]
-          );
-          const nextVersion = lastPlan.rowCount > 0 ? lastPlan.rows[0].version + 1 : 1;
-          
-          await db.query(
-            `INSERT INTO workout_plans (user_id, split, frequency, exercises, progression_scheme, generated_by, version)
-             VALUES ($1, $2, $3, $4, $5, 'AI', $6)`,
-            [userId, split, parseInt(frequency) || 3, JSON.stringify(exercises), progression_scheme || 'Double Progression', nextVersion]
-          );
-          console.log(`Successfully saved AI customized workout split (version ${nextVersion}) for user ${userId}`);
+  // Tool definitions for OpenAI Function Calling
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "update_workout_plan",
+        description: "Update or create a new workout plan for the user based on their requests.",
+        parameters: {
+          type: "object",
+          properties: {
+            split: { type: "string", description: "Name of the workout split (e.g. Full Body, Push/Pull/Legs)" },
+            frequency: { type: "integer", description: "Number of sessions per week" },
+            progression_scheme: { type: "string", description: "Progression scheme (e.g. Double Progression)" },
+            exercises: { 
+              type: "array", 
+              items: { 
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  sets: { type: "integer" },
+                  reps: { type: "string" },
+                  notes: { type: "string" },
+                  day: { type: "string" }
+                },
+                required: ["name", "sets", "reps", "day"]
+              }
+            }
+          },
+          required: ["split", "frequency", "progression_scheme", "exercises"]
         }
-      } catch (e) {
-        console.error('Failed to parse or save AI workout plan update:', e.message);
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_nutrition_plan",
+        description: "Update the user's nutrition plan including macros and meal templates.",
+        parameters: {
+          type: "object",
+          properties: {
+            calories: { type: "integer" },
+            protein: { type: "integer" },
+            carbs: { type: "integer" },
+            fats: { type: "integer" },
+            meal_templates: {
+              type: "object",
+              description: "Suggested meals for the day. E.g. { breakfast: '...', lunch: '...', dinner: '...' }"
+            }
+          },
+          required: ["calories", "protein", "carbs", "fats", "meal_templates"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "log_daily_progress",
+        description: "Log the user's daily progress such as weight, calories, or mood. If only partial data is provided, only include those fields.",
+        parameters: {
+          type: "object",
+          properties: {
+            weight: { type: "number", description: "User's current weight in kg" },
+            energy_score: { type: "integer", description: "Energy score from 1 to 10" },
+            mood_score: { type: "integer", description: "Mood score from 1 to 10" },
+            calories_logged: { type: "integer" },
+            protein_logged: { type: "integer" },
+            carbs_logged: { type: "integer" },
+            fats_logged: { type: "integer" },
+            workouts_completed: { type: "integer", description: "1 if completed today, 0 if not" }
+          }
+        }
       }
     }
-    return cleanReply;
-  };
+  ];
 
   // System prompt templates
   const systemPrompt = `${trainerPrompt}
 
 CRITICAL RULES:
-1. IDENTITY: Do not use generic AI names. Answer as the persona described above.
+1. IDENTITY: Do not use generic AI names. Answer as the persona described above. You are a Virtual Assistant with the ability to manage the user's data.
 2. SCOPE: You ONLY answer questions about fitness, exercise, workouts, nutrition, diet, meal planning, and health/wellness.
-3. OFF-TOPIC: If the user asks about ANYTHING outside fitness and nutrition politely decline.
-4. NO HALLUCINATION & CITATION: Never make up scientific claims. Use the provided Knowledge Base Context. If you use information from the Knowledge Base Context, you MUST cite the source inline (e.g. "According to [Source: YouTube Video 123]...").
-
-WORKOUT CUSTOMIZATION RULES:
-- If the user asks to modify their current workout split, you must:
-  a. Confirm the change to the user.
-  b. Append a [WORKOUT_PLAN_UPDATE] block at the very end of your response containing the COMPLETE updated workout plan JSON.
-  c. Preserve the exact structures of all other exercises and days.
-  d. Each exercise must have "name", "sets", "reps", "notes", and "day".
-  e. Example formatting:
-     [WORKOUT_PLAN_UPDATE]
-     {
-       "split": "Customized Split Name",
-       "frequency": 3,
-       "progression_scheme": "Double Progression",
-       "exercises": [
-         { "name": "Leg Press", "sets": 3, "reps": "10-12", "notes": "Replaced squats", "day": "Monday" }
-       ]
-     }
-     [/WORKOUT_PLAN_UPDATE]
+3. MEDICAL INFO: You have access to the user's Latest Bloodwork Analysis in your context. You ARE ALLOWED to discuss this bloodwork summary and explain how it relates to their fitness, nutrition, and health goals. You are acting as a fitness and nutrition coach reviewing their lab results. Do not claim to be a doctor, but DO provide insights based on the provided analysis.
+4. OFF-TOPIC: If the user asks about ANYTHING outside fitness and nutrition politely decline.
+5. NO HALLUCINATION & CITATION: Never make up scientific claims. Use the provided Knowledge Base Context. If you use information from the Knowledge Base Context, you MUST cite the source inline (e.g. "According to [Source: YouTube Video 123]...").
+6. TOOLS: You have access to tools to update the user's workout plan, nutrition plan, and log their daily progress. USE THESE TOOLS when the user asks you to modify their plan or log their data. If you use a tool, confirm to the user what you have updated.
 
 [CLIENT CONTEXT]
 ${clientContext}
@@ -175,34 +202,138 @@ ${ragContext}`;
   // 2. Try OpenAI first (primary)
   if (openaiApiKey && openaiApiKey !== 'your_openai_api_key_here') {
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify({
-          model: openaiModel,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            },
-            {
-              role: 'user',
-              content: message
-            }
-          ]
-        })
-      });
+      let messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ];
 
-      const json = await response.json();
-      if (json.choices && json.choices[0] && json.choices[0].message) {
-        let reply = json.choices[0].message.content;
-        reply = await processWorkoutPlanUpdates(reply);
-        return res.json({ reply });
-      } else {
-        console.warn('OpenAI API response unexpected, trying Gemini fallback...', JSON.stringify(json));
+      // We might need to loop if the model calls multiple tools or needs to respond after a tool call.
+      let keepGoing = true;
+      let finalReply = '';
+
+      while (keepGoing) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: openaiModel,
+            messages: messages,
+            tools: tools,
+            tool_choice: "auto"
+          })
+        });
+
+        const json = await response.json();
+        if (json.choices && json.choices[0] && json.choices[0].message) {
+          const responseMessage = json.choices[0].message;
+          messages.push(responseMessage); // Add assistant response to history
+
+          if (responseMessage.tool_calls) {
+            // Model wants to call a tool
+            for (const toolCall of responseMessage.tool_calls) {
+              const functionName = toolCall.function.name;
+              const functionArgs = JSON.parse(toolCall.function.arguments);
+              let toolResult = '';
+
+              if (!userId) {
+                toolResult = 'Error: Cannot perform action without a logged-in user.';
+              } else if (functionName === 'update_workout_plan') {
+                try {
+                  const lastPlan = await db.query('SELECT version FROM workout_plans WHERE user_id = $1 ORDER BY version DESC LIMIT 1', [userId]);
+                  const nextVersion = lastPlan.rowCount > 0 ? lastPlan.rows[0].version + 1 : 1;
+                  await db.query(
+                    `INSERT INTO workout_plans (user_id, split, frequency, exercises, progression_scheme, generated_by, version)
+                     VALUES ($1, $2, $3, $4, $5, 'AI', $6)`,
+                    [userId, functionArgs.split, functionArgs.frequency || 3, JSON.stringify(functionArgs.exercises), functionArgs.progression_scheme || 'Double Progression', nextVersion]
+                  );
+                  toolResult = `Successfully updated workout plan to version ${nextVersion}.`;
+                } catch (e) {
+                  toolResult = `Failed to update workout plan: ${e.message}`;
+                }
+              } else if (functionName === 'update_nutrition_plan') {
+                try {
+                  await db.query(
+                    `INSERT INTO nutrition_plans (user_id, calories, protein, carbs, fats, meal_templates)
+                     VALUES ($1, $2, $3, $4, $5, $6)`,
+                    [userId, functionArgs.calories, functionArgs.protein, functionArgs.carbs, functionArgs.fats, JSON.stringify(functionArgs.meal_templates)]
+                  );
+                  toolResult = 'Successfully updated nutrition plan.';
+                } catch (e) {
+                  toolResult = `Failed to update nutrition plan: ${e.message}`;
+                }
+              } else if (functionName === 'log_daily_progress') {
+                try {
+                  // Upsert daily progress for today
+                  const today = new Date().toISOString().split('T')[0];
+                  
+                  // Check if log exists
+                  const logCheck = await db.query('SELECT id FROM progress_logs WHERE user_id = $1 AND log_date = $2', [userId, today]);
+                  
+                  if (logCheck.rowCount > 0) {
+                    // Update existing
+                    const setClauses = [];
+                    const values = [userId, today];
+                    let idx = 3;
+                    
+                    for (const [key, val] of Object.entries(functionArgs)) {
+                      setClauses.push(`${key} = $${idx}`);
+                      values.push(val);
+                      idx++;
+                    }
+                    
+                    if (setClauses.length > 0) {
+                      await db.query(`UPDATE progress_logs SET ${setClauses.join(', ')} WHERE user_id = $1 AND log_date = $2`, values);
+                    }
+                  } else {
+                    // Insert new
+                    // Fetch existing weight to default if not provided
+                    let currentWeight = functionArgs.weight;
+                    if (!currentWeight) {
+                      const profile = await db.query('SELECT weight FROM health_profiles WHERE user_id = $1', [userId]);
+                      currentWeight = profile.rowCount > 0 ? profile.rows[0].weight : 0;
+                    }
+                    
+                    await db.query(
+                      `INSERT INTO progress_logs (user_id, log_date, weight, energy_score, mood_score, calories_logged, protein_logged, carbs_logged, fats_logged, workouts_completed)
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                      [
+                        userId, today, currentWeight, 
+                        functionArgs.energy_score || null, functionArgs.mood_score || null,
+                        functionArgs.calories_logged || 0, functionArgs.protein_logged || 0,
+                        functionArgs.carbs_logged || 0, functionArgs.fats_logged || 0,
+                        functionArgs.workouts_completed || 0
+                      ]
+                    );
+                  }
+                  toolResult = 'Successfully logged daily progress.';
+                } catch (e) {
+                  toolResult = `Failed to log daily progress: ${e.message}`;
+                }
+              }
+
+              messages.push({
+                tool_call_id: toolCall.id,
+                role: "tool",
+                name: functionName,
+                content: toolResult,
+              });
+            }
+          } else {
+            // Model returned a final message
+            finalReply = responseMessage.content;
+            keepGoing = false;
+          }
+        } else {
+          console.warn('OpenAI API response unexpected:', JSON.stringify(json));
+          keepGoing = false;
+        }
+      }
+
+      if (finalReply) {
+        return res.json({ reply: finalReply });
       }
     } catch (apiErr) {
       console.error('OpenAI API call failed, trying Gemini fallback...', apiErr.message);
@@ -229,7 +360,6 @@ User asks: "${message}"`
       const json = await response.json();
       if (json.candidates && json.candidates[0] && json.candidates[0].content && json.candidates[0].content.parts[0]) {
         let reply = json.candidates[0].content.parts[0].text;
-        reply = await processWorkoutPlanUpdates(reply);
         return res.json({ reply });
       }
     } catch (apiErr) {
@@ -449,7 +579,7 @@ You do NOT have a name. You are an AI assistant designed to help human fitness c
 
       const embeddingStr = `[${queryEmbedding.join(',')}]`;
       const kbRes = await db.query(
-        'SELECT content, source_name FROM knowledge_base WHERE trainer_id = $1 ORDER BY embedding <=> $2 LIMIT 3',
+        'SELECT content, source_name FROM knowledge_base WHERE trainer_id = $1 ORDER BY embedding <=> $2 LIMIT 10',
         [trainerId, embeddingStr]
       );
       

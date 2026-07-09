@@ -5,7 +5,7 @@ if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = class DOMMatrix 
 if (typeof global.Path2D === 'undefined') global.Path2D = class Path2D {};
 if (typeof global.ImageData === 'undefined') global.ImageData = class ImageData {};
 
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse/lib/pdf-parse.js');
 const mammoth = require('mammoth');
 const { OpenAI } = require('openai');
 const db = require('../db/db');
@@ -55,7 +55,10 @@ async function processTextAndSave(trainerId, sourceType, sourceName, content) {
     const results = [];
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        const embedding = await getEmbedding(chunk);
+        
+        // Include source name in the text sent to the embedding model to improve semantic search by filename/client name
+        const textToEmbed = `[Source Document: ${sourceName}]\n\n${chunk}`;
+        const embedding = await getEmbedding(textToEmbed);
         
         // Use proper pgvector formatting '[0.1, 0.2, ...]'
         const embeddingVector = `[${embedding.join(',')}]`;
