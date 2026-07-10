@@ -45,7 +45,7 @@ router.get('/friends/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         const friends = await db.query(
-            `SELECT u.id, u.name, u.email, f.status, 
+            `SELECT u.id, u.name, u.email, u.role, u.avatar_url, f.status, 
                 CASE WHEN f.user_id_1 = $1 THEN 'SENT' ELSE 'RECEIVED' END as request_type
              FROM friendships f
              JOIN users u ON (f.user_id_1 = u.id AND f.user_id_2 = $1) OR (f.user_id_2 = u.id AND f.user_id_1 = $1)
@@ -91,7 +91,7 @@ router.get('/feed/:userId', async (req, res) => {
         const allUserIds = [userId, ...friendIds];
 
         const posts = await db.query(
-            `SELECT p.*, u.name as author_name,
+            `SELECT p.*, u.name as author_name, u.avatar_url as author_avatar, u.role as author_role,
                (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as likes_count,
                (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comments_count,
                EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $1) as user_liked,
@@ -177,7 +177,7 @@ router.get('/users/search', async (req, res) => {
     try {
         const { q, excludeId } = req.query;
         // Search by name or email
-        let queryStr = `SELECT id, name, email FROM users WHERE id != $1 AND role = 'CLIENT'`;
+        let queryStr = `SELECT id, name, email, role, avatar_url FROM users WHERE id != $1`;
         const params = [excludeId];
         
         if (q) {

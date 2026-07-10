@@ -247,4 +247,33 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
+// PUT /api/profile/user/:userId - Update user profile details (e.g. name, avatar)
+router.put('/user/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { name, avatar_url } = req.body;
+
+  try {
+    const result = await db.query(
+      `UPDATE users 
+       SET name = COALESCE($1, name), 
+           avatar_url = COALESCE($2, avatar_url)
+       WHERE id = $3 
+       RETURNING id, name, email, role, coach_code, avatar_url`,
+      [name, avatar_url, userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    res.json({
+      success: true,
+      user: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error updating user profile:', err.message);
+    res.status(500).json({ error: 'Failed to update user profile.' });
+  }
+});
+
 module.exports = router;
