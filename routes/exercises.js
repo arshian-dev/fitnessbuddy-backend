@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const wgerService = require('../services/wgerService');
+const db = require('../db/index');
 
 // GET /api/exercises/search?q=squat
 router.get('/search', async (req, res) => {
@@ -10,12 +10,27 @@ router.get('/search', async (req, res) => {
       return res.status(400).json({ error: 'Missing query parameter "q"' });
     }
 
-    const results = await wgerService.searchWger(query);
-    // Limit to top 15 results for the frontend to filter for media
-    res.json({ results: results.slice(0, 15) });
+    const results = await db.query(
+      'SELECT * FROM exercises_library WHERE name ILIKE $1 ORDER BY name ASC LIMIT 15',
+      [`%${query}%`]
+    );
+    
+    // Map to the format the frontend expects (or just return the rows)
+    res.json({ results: results.rows });
   } catch (error) {
-    console.error('Error searching wger exercises:', error);
+    console.error('Error searching local exercises:', error);
     res.status(500).json({ error: 'Failed to search exercises' });
+  }
+});
+
+// GET /api/exercises (Get all exercises)
+router.get('/', async (req, res) => {
+  try {
+    const results = await db.query('SELECT * FROM exercises_library ORDER BY name ASC');
+    res.json({ results: results.rows });
+  } catch (error) {
+    console.error('Error fetching exercises:', error);
+    res.status(500).json({ error: 'Failed to fetch exercises' });
   }
 });
 
