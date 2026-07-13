@@ -25,19 +25,44 @@ async function seed() {
 
     // Seed Exercise Library
     console.log('Seeding Exercise Library...');
-    await db.query(`
-      INSERT INTO exercises_library (name, category) VALUES
-      ('Barbell Back Squat', 'Lower Body - Quad Focus'),
-      ('Romanian Deadlift', 'Lower Body - Hamstring Focus'),
-      ('Leg Press', 'Lower Body - Quad Focus'),
-      ('Bench Press', 'Upper Body - Push'),
-      ('Overhead Press', 'Upper Body - Push'),
-      ('Pull-ups', 'Upper Body - Pull'),
-      ('Barbell Row', 'Upper Body - Pull'),
-      ('Bicep Curls', 'Arms'),
-      ('Tricep Extensions', 'Arms'),
-      ('Plank', 'Core')
-    `);
+    const defaultExercises = [
+      ['Rotator Cuff Warmups (External & Internal Rotations)', 'Warmup'],
+      ['Bodyweight Bulgarian Split Squats', 'Legs'],
+      ['Standard Pushups (on knees if needed)', 'Chest'],
+      ['Banded Lat Pulldowns or Banded Rows', 'Back'],
+      ['Banded Pec Deck (Chest Flies)', 'Chest'],
+      ['Dumbbell Goblet Squats', 'Legs'],
+      ['Dumbbell Incline Bench Press', 'Chest'],
+      ['Cable Bicep Curls', 'Arms'],
+      ['Lying Leg Curls', 'Legs'],
+      ['Barbell Deadlift', 'Back'],
+      ['Romanian Deadlift', 'Legs'],
+      ['Lat Pulldown (Gym)', 'Back'],
+      ['Seated Cable Row', 'Back'],
+      ['Leg Press', 'Legs'],
+      ['Dumbbell Shoulder Press', 'Shoulders'],
+      ['Plank', 'Core'],
+      ['Hanging Knee Raises', 'Core'],
+      ['Low Stress Walking - LISS Cardio', 'Cardio'],
+      ['Barbell Back Squat', 'Legs'],
+      ['Barbell Row', 'Back'],
+      ['Overhead Press', 'Shoulders'],
+      ['Machine Chest Press', 'Chest'],
+      ['Incline Barbell Bench Press', 'Chest'],
+      ['Dips (Chest-focused)', 'Chest'],
+      ['Face Pulls', 'Shoulders'],
+      ['Hyperextensions (Back Extensions)', 'Back'],
+      ['Dumbbell Shrugs', 'Back'],
+      ['Bench Press', 'Chest'],
+      ['Pull-ups', 'Back'],
+      ['Tricep Extensions', 'Arms']
+    ];
+    for (const [name, cat] of defaultExercises) {
+      await db.query(
+        'INSERT INTO exercises_library (name, category) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+        [name, cat]
+      );
+    }
 
     // 1. Ensure Coach Trainer Tenant Exists and Get its ID
     await db.query(`
