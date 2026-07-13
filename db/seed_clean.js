@@ -36,7 +36,7 @@ async function seedCleanData() {
       ['Dumbbell Shoulder Press', 'Shoulders'],
       ['Plank', 'Core'],
       ['Hanging Knee Raises', 'Core'],
-      ['Low Stress Walking / LISS Cardio', 'Cardio'],
+      ['Low Stress Walking - LISS Cardio', 'Cardio'],
       ['Barbell Back Squat', 'Legs'],
       ['Barbell Row', 'Back'],
       ['Overhead Press', 'Shoulders'],
