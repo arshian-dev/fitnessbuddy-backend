@@ -21,5 +21,12 @@ INSERT INTO exercises_library (name, category) VALUES
 ('Barbell Row', 'Upper Body - Pull'),
 ('Bicep Curls', 'Arms'),
 ('Tricep Extensions', 'Arms'),
-('Plank', 'Core')
+('Plank', 'Core'),
+('Bodyweight Bulgarian Split Squats', 'Lower Body - Quad Focus'),
+('Machine Chest Press', 'Upper Body - Push'),
+('Incline Barbell Bench Press', 'Upper Body - Push'),
+('Dips (Chest-focused)', 'Upper Body - Push'),
+('Face Pulls', 'Upper Body - Pull'),
+('Hyperextensions (Back Extensions)', 'Upper Body - Pull'),
+('Dumbbell Shrugs', 'Upper Body - Pull')
 ON CONFLICT (name) DO NOTHING;

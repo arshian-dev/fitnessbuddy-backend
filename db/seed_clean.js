@@ -36,7 +36,16 @@ async function seedCleanData() {
       ['Dumbbell Shoulder Press', 'Shoulders'],
       ['Plank', 'Core'],
       ['Hanging Knee Raises', 'Core'],
-      ['Low Stress Walking / LISS Cardio', 'Cardio']
+      ['Low Stress Walking / LISS Cardio', 'Cardio'],
+      ['Barbell Back Squat', 'Legs'],
+      ['Barbell Row', 'Back'],
+      ['Overhead Press', 'Shoulders'],
+      ['Machine Chest Press', 'Chest'],
+      ['Incline Barbell Bench Press', 'Chest'],
+      ['Dips (Chest-focused)', 'Chest'],
+      ['Face Pulls', 'Shoulders'],
+      ['Hyperextensions (Back Extensions)', 'Back'],
+      ['Dumbbell Shrugs', 'Back']
     ];
     for (const [name, cat] of defaultExercises) {
       await db.query(
