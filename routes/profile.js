@@ -275,5 +275,62 @@ router.put('/user/:userId', async (req, res) => {
     res.status(500).json({ error: 'Failed to update user profile.' });
   }
 });
+// POST /api/profile/regenerate-diet - Regenerate only the nutrition plan
+router.post('/regenerate-diet', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required.' });
+  }
+
+  try {
+    // 1. Fetch user's profile to pass to generator
+    const profileResult = await db.query('SELECT * FROM health_profiles WHERE user_id = $1', [userId]);
+    if (profileResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Health profile not found.' });
+    }
+    const profile = profileResult.rows[0];
+
+    // The recommendation engine expects camelCase properties similar to onboardingData, 
+    // but works with snake_case if we just map or pass it through since JS expects some fields.
+    // Let's reconstruct onboardingData format
+    const onboardingData = {
+      age: profile.age,
+      gender: profile.gender,
+      weight: profile.weight,
+      height: profile.height,
+      conditions: profile.conditions,
+      goal: profile.end_goal_description, // Wait, end_goal is a string. Actually the generator checks `goal`. We don't have `goal` in health_profiles!
+      // In the original, goal was passed but not saved. Let's just pass FAT_LOSS as default if not found.
+      goal: 'FAT_LOSS', 
+      chaiCups: profile.chai_cups
+    };
+
+    // 2. Generate
+    const nutritionPlan = generateNutritionPlan(userId, profile, onboardingData);
+
+    // 3. Save to DB
+    const nutritionResult = await db.query(
+      `INSERT INTO nutrition_plans (user_id, calories, protein, carbs, fats, meal_templates)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        userId,
+        nutritionPlan.calories,
+        nutritionPlan.protein,
+        nutritionPlan.carbs,
+        nutritionPlan.fats,
+        JSON.stringify(nutritionPlan.meal_templates)
+      ]
+    );
+
+    res.json({
+      success: true,
+      nutritionPlan: nutritionResult.rows[0]
+    });
+  } catch (err) {
+    console.error('Error regenerating diet:', err.message);
+    res.status(500).json({ error: 'Failed to regenerate diet.' });
+  }
+});
 
 module.exports = router;

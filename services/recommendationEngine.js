@@ -685,32 +685,32 @@ function generateNutritionPlan(userId, profile, onboardingData) {
       {
         meal: 'Breakfast',
         options: [
-          'Option A: Boiled or scrambled eggs + whole wheat bran bread + black tea/coffee. (Portioned to hit targets below)',
-          'Option B: Oatmeal cooked in low-fat milk + chopped almonds + scoop of whey protein.'
+          'Option A: 2 Boiled or scrambled eggs + 2 slices whole wheat bran bread + 1 cup black tea/coffee.',
+          'Option B: 1 bowl Oatmeal (50g) cooked in 1 cup low-fat milk + 10 chopped almonds + 1 scoop of whey protein.'
         ],
         target_macro_estimate: calcMacros(0.25)
       },
       {
         meal: 'Lunch',
         options: [
-          'Option A: Grilled/Tawa Chicken Breast + whole wheat Roti + mixed green salad.',
-          'Option B: Cooked Daal (Lentils) + low-fat Paneer/Tofu stir-fry + salad.'
+          'Option A: 150g Grilled/Tawa Chicken Breast + 1 whole wheat Roti + 1 large bowl mixed green salad.',
+          'Option B: 1 bowl Cooked Daal (Lentils) + 100g low-fat Paneer/Tofu stir-fry + 1 bowl salad.'
         ],
         target_macro_estimate: calcMacros(0.35)
       },
       {
         meal: 'Dinner',
         options: [
-          'Option A: Grilled Fish or dry Seekh Kebabs + small Roti + steamed mixed seasonal vegetables.',
-          'Option B: Dry Chicken Keema + boiled white rice.'
+          'Option A: 150g Grilled Fish or 2 dry Seekh Kebabs + 1 small Roti + 1 cup steamed mixed seasonal vegetables.',
+          'Option B: 150g Dry Chicken Keema + 1 cup boiled white rice.'
         ],
         target_macro_estimate: calcMacros(0.25)
       },
       {
         meal: 'Snacks / Post-Workout',
         options: [
-          'Option A: Scoop of Whey Protein in water + almonds.',
-          'Option B: Skimmed milk tea (chai with stevia) + boiled egg.'
+          'Option A: 1 Scoop of Whey Protein in water + 15 almonds.',
+          'Option B: 1 cup Skimmed milk tea (chai with stevia) + 2 boiled egg whites.'
         ],
         target_macro_estimate: calcMacros(0.15)
       }
@@ -721,32 +721,32 @@ function generateNutritionPlan(userId, profile, onboardingData) {
       {
         meal: 'Breakfast',
         options: [
-          'Option A: Scrambled whole eggs + Bran Bread + glass of milk.',
-          'Option B: Oats Shake: Oats + milk + Whey + banana + almonds.'
+          'Option A: 3 Scrambled whole eggs + 2-3 slices Bran Bread + 1 glass of milk.',
+          'Option B: Oats Shake: 80g Oats + 1 glass milk + 1 scoop Whey + 1 banana + 15 almonds.'
         ],
         target_macro_estimate: calcMacros(0.25)
       },
       {
         meal: 'Lunch',
         options: [
-          'Option A: Tawa Chicken Breast + Roti + boiled white rice + salad.',
-          'Option B: Daal Chawal (Lentils and rice) + boiled chicken breast.'
+          'Option A: 200g Tawa Chicken Breast + 2 Roti + 1 cup boiled white rice + salad.',
+          'Option B: 2 bowls Daal (Lentils) + 1.5 cups rice + 150g boiled chicken breast.'
         ],
         target_macro_estimate: calcMacros(0.35)
       },
       {
         meal: 'Dinner',
         options: [
-          'Option A: Mutton or beef mince (Keema) + Rotis + green salad.',
-          'Option B: Grilled Fish + boiled potato wedges + stir-fried mixed seasonal vegetables.'
+          'Option A: 200g Mutton or beef mince (Keema) + 2 Rotis + large green salad.',
+          'Option B: 200g Grilled Fish + 200g boiled potato wedges + 1.5 cups stir-fried mixed vegetables.'
         ],
         target_macro_estimate: calcMacros(0.25)
       },
       {
         meal: 'Snacks / Post-Workout',
         options: [
-          'Option A: Whey + milk + banana + peanut butter blended.',
-          'Option B: Seekh Kebabs wrapped in flatbread with mint raita.'
+          'Option A: 1 scoop Whey + 1 glass milk + 1 large banana + 2 tbsp peanut butter blended.',
+          'Option B: 3 Seekh Kebabs wrapped in 1 large flatbread with mint raita.'
         ],
         target_macro_estimate: calcMacros(0.15)
       }
