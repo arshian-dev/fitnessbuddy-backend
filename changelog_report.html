@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Buddy - Client Feedback Report</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#e5eeff",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-container": "#586377",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-primary-fixed-variant": "#005049",
+                        "on-tertiary-fixed": "#341100",
+                        "tertiary": "#994100",
+                        "surface-variant": "#d3e4fe",
+                        "on-secondary-fixed": "#111c2d",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#f4fffc",
+                        "primary-container": "#008378",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary-fixed-variant": "#3c475a",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary-fixed-dim": "#bcc7de",
+                        "outline": "#6d7a77",
+                        "secondary-container": "#d5e0f8",
+                        "tertiary-container": "#c05400",
+                        "on-primary-fixed": "#00201d",
+                        "secondary-fixed": "#d8e3fb",
+                        "secondary": "#545f73",
+                        "primary": "#00685f",
+                        "surface": "#f8f9ff",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#6bd8cb",
+                        "tertiary-fixed": "#ffdbca",
+                        "primary-fixed": "#89f5e7",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-surface": "#213145",
+                        "surface-tint": "#006a61",
+                        "surface-container-low": "#eff4ff",
+                        "outline-variant": "#bcc9c6",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#783200",
+                        "on-surface": "#0b1c30",
+                        "background": "#f8f9ff",
+                        "tertiary-fixed-dim": "#ffb690",
+                        "on-surface-variant": "#3d4947",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "on-background": "#0b1c30"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "container-margin": "20px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "xl": "32px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "stat-display": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "stat-display": ["48px", { "lineHeight": "48px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: A4;
+            margin: 0.3cm;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                background-color: white;
+                font-size: 10.5px !important;
+                line-height: 1.3 !important;
+            }
+
+            .print-shadow-none {
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            /* Balanced elements for printing to perfectly fit on one page */
+            .mb-12 { margin-bottom: 0.75rem !important; }
+            .mb-6 { margin-bottom: 0.5rem !important; }
+            .p-8, .md\:p-12, .md\:p-16 { padding: 0.75rem !important; }
+            .p-6 { padding: 0.5rem !important; }
+            .gap-6, .gap-8, .gap-x-12 { gap: 0.5rem !important; }
+            .gap-y-6 { row-gap: 0.5rem !important; }
+            
+            h1 { font-size: 1.3rem !important; line-height: 1.2 !important; margin-bottom: 0 !important; }
+            h2 { font-size: 1.1rem !important; line-height: 1.2 !important; margin-bottom: 0.4rem !important; }
+            h3 { font-size: 0.95rem !important; margin-bottom: 0.2rem !important; }
+            
+            .text-body-lg { font-size: 0.9rem !important; line-height: 1.3 !important; }
+            .text-sm { font-size: 0.75rem !important; line-height: 1.25 !important; }
+            .text-4xl { font-size: 1.4rem !important; }
+            .text-3xl { font-size: 1.1rem !important; margin-bottom: 0.2rem !important; }
+            
+            /* Prevent page breaks and extra spacing */
+            section, tr, div[class*="bg-surface-container"] {
+                page-break-inside: avoid;
+                margin-bottom: 0.75rem !important;
+            }
+
+            /* Additional tightening */
+            header { margin-bottom: 0.75rem !important; }
+            footer { padding-top: 0.5rem !important; margin-top: 0.5rem !important; }
+            table th, table td { padding: 0.5rem !important; }
+            .material-symbols-outlined { font-size: 1.1rem !important; }
+        }
+
+        .section-divider {
+            border-bottom: 1px solid #bcc9c6;
+            margin: 2rem 0;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body class="font-body-md text-body-md antialiased p-4 md:p-12">
+
+    <!-- Document Container -->
+    <div
+        class="max-w-[1000px] mx-auto bg-surface-container-lowest p-8 md:p-16 rounded-xl shadow-lg print-shadow-none border border-outline-variant/20">
+
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+            <div class="flex items-center gap-4">
+                <div class="bg-primary-container p-3 rounded-xl">
+                    <span class="material-symbols-outlined text-on-primary-container text-4xl">fitness_center</span>
+                </div>
+                <div>
+                    <h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Fitness Buddy</h1>
+                    <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Project Feedback Report • <span id="current-date">-- -- ----</span></p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Client Requests & Implementation -->
+        <section class="mb-12">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary-container">assignment_turned_in</span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Requests vs. Implementation</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-variant/30">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surface-container-low">
+                        <tr>
+                            <th
+                                class="p-6 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30 w-1/2">
+                                WHAT WAS REQUESTED</th>
+                            <th
+                                class="p-6 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30 w-1/2">
+                                WHAT WE DELIVERED</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/20">
+                        <tr>
+                            <td class="p-6 align-top">
+                                <p class="font-semibold text-on-surface mb-1">Better Food Tracking</p>
+                                <p class="text-sm text-on-surface-variant">You wanted an easier way to log meals exactly as you eat them, including flexible portion sizes.</p>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="font-semibold text-primary mb-1">Detailed Daily Planner</p>
+                                <p class="text-sm text-on-surface-variant">We added a clear daily overview showing exactly what you need to eat. Logging a meal now lets you adjust the exact amount you ate, and anyone can easily tweak their goals without feeling restricted.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top">
+                                <p class="font-semibold text-on-surface mb-1">Instant Plan Updates</p>
+                                <p class="text-sm text-on-surface-variant">You asked for a quick way to get a new meal plan if your current one isn't working out today.</p>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="font-semibold text-primary mb-1">One-Click Refresh</p>
+                                <p class="text-sm text-on-surface-variant">We added a simple "Refresh" button. With one click, your dashboard instantly updates with a brand new, personalized meal plan for the day.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top">
+                                <p class="font-semibold text-on-surface mb-1">Smarter AI Coach Conversations</p>
+                                <p class="text-sm text-on-surface-variant">Chatting with the AI coach felt a bit clunky, especially when writing longer messages or getting recipe advice.</p>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="font-semibold text-primary mb-1">Natural and Clean Chatting</p>
+                                <p class="text-sm text-on-surface-variant">You can now easily write longer messages with paragraph breaks. We've also updated the Nutrition AI to guide you on how to ask better questions (for example, asking for "150g chicken pan-fried in 1 tbsp oil" instead of just "chicken"), which helps the AI give you much more accurate and helpful advice.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top">
+                                <p class="font-semibold text-on-surface mb-1">Smoother App Experience</p>
+                                <p class="text-sm text-on-surface-variant">You noticed some visual glitches, screen freezing, and hard-to-read text in certain modes.</p>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="font-semibold text-primary mb-1">Bug Fixes & Polish</p>
+                                <p class="text-sm text-on-surface-variant">We fixed delays in the workout rest timer, made the text much easier to read when using Light Mode, and solved a hidden error that caused occasional app crashes.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top">
+                                <p class="font-semibold text-on-surface mb-1">New Client Accounts & Roster Seeding</p>
+                                <p class="text-sm text-on-surface-variant">The coach wanted four specific clients (Rozain, Nuqta, Provit, Numa) in the system assigned directly to their roster.</p>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="font-semibold text-primary mb-1">Automated Client & Plan Onboarding</p>
+                                <p class="text-sm text-on-surface-variant">Created accounts for Rozain, Nuqta, Provit, and Numa, computed their health profiles, generated tailored workout/nutrition plans, and assigned them to Coach Noroze Sikandar.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Value-Add Features (Table Style) -->
+        <section class="mb-12">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-tertiary">verified</span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Strategic Value-Adds</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-outline-variant/30">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surface-container-low">
+                        <tr>
+                            <th class="p-6 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30 w-1/3">FEATURE</th>
+                            <th class="p-6 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30 w-2/3">BENEFIT</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/20">
+                        <tr>
+                            <td class="p-6 align-top bg-surface-container">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-primary text-xl">calculate</span>
+                                    <p class="font-semibold text-on-surface">Clear Daily Goals</p>
+                                </div>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="text-sm text-on-surface-variant">A simple tracker that automatically updates as you eat, taking the guesswork out of your daily food targets.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top bg-surface-container-high">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-primary text-xl">autorenew</span>
+                                    <p class="font-semibold text-on-surface">Stress-Free Adjustments</p>
+                                </div>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="text-sm text-on-surface-variant">Don't like what's on the menu today? Swap out your whole meal plan with a single tap, completely stress-free.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top bg-surface-container-highest">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-primary text-xl">forum</span>
+                                    <p class="font-semibold text-on-surface">A Coach That Listens</p>
+                                </div>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="text-sm text-on-surface-variant">Our AI coach now feels much more like a real conversation, easily understanding your questions and giving clear, helpful answers.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-6 align-top bg-surface-container">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-primary text-xl">group_add</span>
+                                    <p class="font-semibold text-on-surface">Instant Roster Onboarding</p>
+                                </div>
+                            </td>
+                            <td class="p-6 align-top bg-surface-bright/30">
+                                <p class="text-sm text-on-surface-variant">Instant setup of client accounts with computed health profiles and AI-generated workout/nutrition plans, immediately available in the coach's active roster.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+
+        <!-- Active System Accounts & Test Credentials -->
+        <section class="mb-12">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary">key</span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Active Accounts & Test Credentials</h2>
+            </div>
+            <p class="text-sm text-on-surface-variant mb-4">Authentication is handled via passwordless email sign-in. Use any email address below to log in directly:</p>
+            <div class="overflow-hidden rounded-xl border border-outline-variant/30">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surface-container-low">
+                        <tr>
+                            <th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30">NAME</th>
+                            <th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30">ROLE</th>
+                            <th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30">EMAIL / LOGIN</th>
+                            <th class="p-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/30">PROFILE CHARACTERISTICS</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/20">
+                        <tr>
+                            <td class="p-4 font-semibold text-on-surface">Coach Noroze Sikandar</td>
+                            <td class="p-4"><span class="bg-primary/10 text-primary font-bold px-2 py-1 rounded text-xs">COACH</span></td>
+                            <td class="p-4 font-mono text-sm text-primary">coach@test.com</td>
+                            <td class="p-4 text-sm text-on-surface-variant">Oversees active clients, manages exercise/food library, and overrides plans.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-semibold text-on-surface">Rozain</td>
+                            <td class="p-4"><span class="bg-secondary-container text-on-secondary-container font-bold px-2 py-1 rounded text-xs">CLIENT</span></td>
+                            <td class="p-4 font-mono text-sm text-primary">rozain@test.com</td>
+                            <td class="p-4 text-sm text-on-surface-variant">Muscle gain & strength focus. Full Body Gym split.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-semibold text-on-surface">Nuqta</td>
+                            <td class="p-4"><span class="bg-secondary-container text-on-secondary-container font-bold px-2 py-1 rounded text-xs">CLIENT</span></td>
+                            <td class="p-4 font-mono text-sm text-primary">nuqta@test.com</td>
+                            <td class="p-4 text-sm text-on-surface-variant">PCOS management & fat loss. Home workout split & high stress plan.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-semibold text-on-surface">Provit</td>
+                            <td class="p-4"><span class="bg-secondary-container text-on-secondary-container font-bold px-2 py-1 rounded text-xs">CLIENT</span></td>
+                            <td class="p-4 font-mono text-sm text-primary">provit@test.com</td>
+                            <td class="p-4 text-sm text-on-surface-variant">Athletic performance & body recomposition. 4-day gym split.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 font-semibold text-on-surface">Numa</td>
+                            <td class="p-4"><span class="bg-secondary-container text-on-secondary-container font-bold px-2 py-1 rounded text-xs">CLIENT</span></td>
+                            <td class="p-4 font-mono text-sm text-primary">numa@test.com</td>
+                            <td class="p-4 text-sm text-on-surface-variant">Fat loss & body toning. Balanced macro targets & 45-60 min gym sessions.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer
+            class="pt-8 border-t border-outline-variant/30 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-xl">verified_user</span>
+                <p class="font-label-md text-label-md text-on-surface">Fitness Buddy - Project Feedback Report</p>
+            </div>
+            <p class="text-sm text-on-surface-variant" id="footer-date">© 2026 Confidential Project Delivery</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Update current date
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const dateString = now.toLocaleDateString('en-US', options);
+        document.getElementById('current-date').textContent = dateString;
+        document.getElementById('footer-date').textContent = `© ${now.getFullYear()} Fitness Buddy • ${dateString}`;
+    </script>
+</body>
+
+</html>
