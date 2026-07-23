@@ -53,19 +53,39 @@ router.get('/history/:userId/:exerciseId', async (req, res) => {
     }
 });
 
-// POST /api/workouts/log-set - Log a completed set
-router.post('/log-set', async (req, res) => {
+const { computeProfile } = require('../services/profilingEngine');
+const { generateWorkoutPlan } = require('../services/recommendationEngine');
+
+// POST /api/workouts/change-split - Change client's workout split manually
+router.post('/change-split', async (req, res) => {
     try {
-        const { userId, exerciseId, weight, reps } = req.body;
-        const result = await db.query(
-            `INSERT INTO workout_logs (user_id, exercise_id, weight, reps)
-             VALUES ($1, $2, $3, $4) RETURNING *`,
-            [userId, exerciseId, weight, reps]
+        const { userId, splitKey } = req.body;
+        if (!userId || !splitKey) {
+            return res.status(400).json({ error: 'User ID and splitKey are required' });
+        }
+
+        // Fetch user health profile if available
+        const profileRes = await db.query('SELECT * FROM health_profiles WHERE user_id = $1', [userId]);
+        const healthProfile = profileRes.rowCount > 0 ? profileRes.rows[0] : {};
+
+        // Compute scores
+        const computed = computeProfile(healthProfile);
+
+        // Generate workout plan with explicit splitKey
+        const newPlan = generateWorkoutPlan(userId, computed, healthProfile, splitKey);
+
+        // Delete existing workout plan and insert new one
+        await db.query('DELETE FROM workout_plans WHERE user_id = $1', [userId]);
+        const insertRes = await db.query(
+            `INSERT INTO workout_plans (user_id, split, frequency, exercises, progression_scheme, generated_by, version)
+             VALUES ($1, $2, $3, $4, $5, 'CLIENT', 1) RETURNING *`,
+            [userId, newPlan.split, newPlan.frequency, JSON.stringify(newPlan.exercises), newPlan.progression_scheme]
         );
-        res.status(201).json(result.rows[0]);
+
+        res.status(200).json(insertRes.rows[0]);
     } catch (err) {
-        console.error('Error logging set:', err);
-        res.status(500).json({ error: 'Failed to log set' });
+        console.error('Error changing workout split:', err);
+        res.status(500).json({ error: 'Failed to change workout split' });
     }
 });
 

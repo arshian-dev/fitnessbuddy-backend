@@ -3,7 +3,7 @@
  * Generates custom workout and nutrition plans based on the client health profile.
  */
 
-function generateWorkoutPlan(userId, profile, onboardingData) {
+function generateWorkoutPlan(userId, profile, onboardingData, customSplitKey = null) {
   const conditions = onboardingData.conditions || [];
   const experience = onboardingData.experience || 'BEGINNER';
   const homeOrGym = onboardingData.home_or_gym || onboardingData.homeOrGym || 'GYM';
@@ -26,7 +26,55 @@ function generateWorkoutPlan(userId, profile, onboardingData) {
     day: dayLabel
   });
 
-  if (homeOrGym === 'HOME') {
+  // Evaluate explicit split selection if provided
+  const targetKey = customSplitKey ? customSplitKey.toUpperCase() : null;
+
+  if (targetKey === 'PPL_6DAY') {
+    split = 'Push / Pull / Legs (PPL) 6-Day Split';
+    frequency = 6;
+    exercises = [
+      // Day 1: Push A
+      getRotatorWarmup('Day 1: Push A'),
+      { name: 'Barbell Flat Bench Press', sets: 4, reps: '8-10', restSeconds: 90, notes: 'Keep shoulder blades retracted.', day: 'Day 1: Push A' },
+      { name: 'Incline Dumbbell Chest Press', sets: 3, reps: '10-12', restSeconds: 75, notes: 'Control the stretch at bottom.', day: 'Day 1: Push A' },
+      { name: 'Standing Overhead Barbell Press', sets: 3, reps: '8-10', restSeconds: 90, notes: 'Brace core, press overhead.', day: 'Day 1: Push A' },
+      { name: 'Tricep Rope Pushdowns', sets: 3, reps: '12-15', restSeconds: 60, notes: 'Flare rope at bottom.', day: 'Day 1: Push A' },
+
+      // Day 2: Pull A
+      getRotatorWarmup('Day 2: Pull A'),
+      { name: 'Barbell Bent-Over Row', sets: 4, reps: '8-10', restSeconds: 90, notes: 'Hinge hips, pull to waist.', day: 'Day 2: Pull A' },
+      { name: 'Lat Pulldowns (Wide Grip)', sets: 3, reps: '10-12', restSeconds: 75, notes: 'Squeeze lats at bottom.', day: 'Day 2: Pull A' },
+      { name: 'Seated Cable Row', sets: 3, reps: '12', restSeconds: 60, notes: 'Squeeze mid-back.', day: 'Day 2: Pull A' },
+      { name: 'Standing Barbell Bicep Curls', sets: 3, reps: '12', restSeconds: 60, notes: 'Strict form, no swinging.', day: 'Day 2: Pull A' },
+
+      // Day 3: Legs A
+      { name: 'Barbell Back Squat', sets: 4, reps: '8-10', restSeconds: 120, notes: 'Squat to parallel or lower.', day: 'Day 3: Legs A' },
+      { name: 'Dumbbell Romanian Deadlifts', sets: 3, reps: '10-12', restSeconds: 90, notes: 'Hinge hips back.', day: 'Day 3: Legs A' },
+      { name: 'Leg Press (Machine)', sets: 3, reps: '12-15', restSeconds: 75, notes: 'Full depth without tailbone tuck.', day: 'Day 3: Legs A' },
+      { name: 'Standing Calf Raises', sets: 4, reps: '15-20', restSeconds: 45, notes: 'Full extension.', day: 'Day 3: Legs A' },
+
+      // Day 4: Push B
+      getRotatorWarmup('Day 4: Push B'),
+      { name: 'Incline Barbell Bench Press', sets: 4, reps: '8-10', restSeconds: 90, notes: '30-degree incline.', day: 'Day 4: Push B' },
+      { name: 'Dumbbell Shoulder Press', sets: 3, reps: '10-12', restSeconds: 75, notes: 'Seated press.', day: 'Day 4: Push B' },
+      { name: 'Banded Pec Deck Chest Flyes', sets: 3, reps: '15', restSeconds: 60, notes: 'Peak contraction.', day: 'Day 4: Push B' },
+      { name: 'Dumbbell Lateral Raises', sets: 4, reps: '15', restSeconds: 45, notes: 'Control descent.', day: 'Day 4: Push B' },
+
+      // Day 5: Pull B
+      getRotatorWarmup('Day 5: Pull B'),
+      { name: 'Weighted Pull-Ups', sets: 4, reps: '6-8', restSeconds: 90, notes: 'Full extension at bottom.', day: 'Day 5: Pull B' },
+      { name: 'Dumbbell Single-Arm Rows', sets: 3, reps: '10-12', restSeconds: 75, notes: 'Pull dumbbell to hip.', day: 'Day 5: Pull B' },
+      { name: 'Standing Cable Face Pulls', sets: 3, reps: '15', restSeconds: 60, notes: 'High pull to rear delts.', day: 'Day 5: Pull B' },
+      { name: 'Hammer Curls', sets: 3, reps: '12', restSeconds: 60, notes: 'Target brachialis.', day: 'Day 5: Pull B' },
+
+      // Day 6: Legs B
+      { name: 'Barbell Deadlift', sets: 3, reps: '5', restSeconds: 150, notes: 'Heavy compound deadlift.', day: 'Day 6: Legs B' },
+      { name: 'Bulgarian Split Squats', sets: 3, reps: '10 per leg', restSeconds: 75, notes: 'Dumbbells at sides.', day: 'Day 6: Legs B' },
+      { name: 'Lying Leg Curls', sets: 3, reps: '12-15', restSeconds: 60, notes: 'Hamstring isolation.', day: 'Day 6: Legs B' },
+      { name: 'Hanging Knee Raises', sets: 3, reps: '15', restSeconds: 45, notes: 'Core control.', day: 'Day 6: Legs B' }
+    ];
+    progressionScheme = 'PPL Linear Progression: Add 2.5kg to main lifts once upper rep range target is reached on all sets.';
+  } else if (targetKey === 'DESI_HOME_3DAY' || (!targetKey && homeOrGym === 'HOME')) {
     split = 'Desi Home-Fitness 3-Day Split';
     frequency = 3;
     exercises = [
@@ -134,7 +182,7 @@ function generateWorkoutPlan(userId, profile, onboardingData) {
       }
     ];
     progressionScheme = 'Home progression: Add 1-2 reps per set each week. If reps exceed 20, increase weight or slow tempo (3s descents).';
-  } else if (isPCOS) {
+  } else if (targetKey === 'PCOS_3DAY' || (!targetKey && isPCOS)) {
     split = 'PCOS 3-Day Low-Cortisol Split';
     frequency = 3;
     exercises = [
@@ -234,7 +282,7 @@ function generateWorkoutPlan(userId, profile, onboardingData) {
       }
     ];
     progressionScheme = 'Low-stress progression: Focus on stabilization, core tension, and glucose management over absolute load.';
-  } else if (hasKneeInjury) {
+  } else if (targetKey === 'KNEE_FRIENDLY_3DAY' || (!targetKey && hasKneeInjury)) {
     split = 'Knee-Friendly 3-Day Upper/Lower Split';
     frequency = 3;
     exercises = [
@@ -334,7 +382,7 @@ function generateWorkoutPlan(userId, profile, onboardingData) {
       }
     ];
     progressionScheme = 'Injury-free progression: Progress upper body lifts weekly. Lower body movements should remain pain-free.';
-  } else if (experience === 'INTERMEDIATE' || experience === 'ADVANCED') {
+  } else if (targetKey === 'UPPER_LOWER_4DAY' || (!targetKey && (experience === 'INTERMEDIATE' || experience === 'ADVANCED'))) {
     split = 'Upper / Lower 4-Day Weekly Split';
     frequency = 4;
     exercises = [
@@ -609,8 +657,35 @@ function generateWorkoutPlan(userId, profile, onboardingData) {
         dayLabel = threeDayMap[dayNum] || 'Monday';
       }
     }
+    const getExerciseId = (name) => {
+      const str = (name || '').toLowerCase();
+      if (str.includes('rotator')) return 'rotator-cuff';
+      if (str.includes('incline') && (str.includes('bench') || str.includes('press') || str.includes('fly'))) return 'db-incline-press';
+      if (str.includes('overhead') || str.includes('shoulder press')) return 'overhead-press';
+      if (str.includes('bench press') || str.includes('chest press') || str.includes('floor press')) return 'bench-press';
+      if (str.includes('goblet')) return 'goblet-squats';
+      if (str.includes('split squat') || str.includes('bulgarian') || str.includes('lunge')) return 'bulgarian-split-squats';
+      if (str.includes('squat')) return 'barbell-back-squat';
+      if (str.includes('romanian deadlift') || str.includes('rdl')) return 'romanian-deadlift';
+      if (str.includes('deadlift')) return 'barbell-deadlift';
+      if (str.includes('row')) return 'barbell-row';
+      if (str.includes('pull-up') || str.includes('pullup') || str.includes('pull up')) return 'pull-ups';
+      if (str.includes('lat pulldown') || str.includes('pulldown')) return 'lat-pulldown';
+      if (str.includes('leg press')) return 'leg-press';
+      if (str.includes('leg curl') || str.includes('swiss ball curl')) return 'lying-leg-curls';
+      if (str.includes('bicep') || str.includes('curl')) return 'bicep-curls';
+      if (str.includes('tricep') || str.includes('pushdown')) return 'tricep-extensions';
+      if (str.includes('pushup') || str.includes('push-up')) return 'pushups';
+      if (str.includes('plank')) return 'plank';
+      if (str.includes('walk') || str.includes('cardio') || str.includes('liss') || str.includes('stairmaster') || str.includes('knee cardio')) return 'liss-cardio';
+      if (str.includes('hyperextension') || str.includes('cobra')) return 'hyperextensions';
+      if (str.includes('knee raise') || str.includes('deadbug') || str.includes('twist') || str.includes('bird-dog') || str.includes('pallof')) return 'hanging-knee-raises';
+      return 'bench-press';
+    };
+
     return {
       ...ex,
+      imageId: ex.imageId || getExerciseId(ex.name),
       day: dayLabel
     };
   });
