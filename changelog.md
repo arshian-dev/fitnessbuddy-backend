@@ -30,5 +30,6 @@
   * **Numa**: `numa@test.com` (Fat Loss & Body Toning)
 * **Coach Assignment**: Automatically linked all 4 client accounts to Coach Noroze Sikandar (`coach@test.com`) for direct roster management in the Coach Dashboard.
 * **Full Profile & Plan Seeding**: Computed health profiles (recovery scores, adherence probabilities, medical flags), generated custom workout splits and nutrition schedules, and seeded initial check-in logs using `create_requested_clients.js`.
+* **Flexible Re-Onboarding**: All newly added clients may re-take the onboarding questionnaire at any time to update their health profiles, dietary preferences, and workout splits according to their own needs.
 
 
