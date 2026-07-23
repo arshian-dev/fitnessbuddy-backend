@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/db');
 const { OpenAI } = require('openai');
+const { OFFICIAL_EXERCISES, normalizeToOfficialExercise } = require('../utils/exerciseNormalizer');
 
 // cosineSimilarity removed in favor of pgvector
 
@@ -194,6 +195,8 @@ CRITICAL RULES:
 4. OFF-TOPIC: If the user asks about ANYTHING outside fitness and nutrition politely decline.
 5. NO HALLUCINATION & CITATION: Never make up scientific claims. Use the provided Knowledge Base Context. If you use information from the Knowledge Base Context, you MUST cite the source inline (e.g. "According to [Source: YouTube Video 123]...").
 6. TOOLS: You have access to tools to update the user's workout plan, nutrition plan, and log their daily progress. USE THESE TOOLS when the user asks you to modify their plan or log their data. If you use a tool, confirm to the user what you have updated.
+7. EXERCISE SELECTION: When recommending workouts or calling update_workout_plan, you MUST ONLY select exercises from our official supported exercise catalog below. Do NOT invent new names:
+${OFFICIAL_EXERCISES.map(ex => `- ${ex}`).join('\n')}
 
 [CLIENT CONTEXT]
 ${clientContext}
@@ -244,10 +247,17 @@ ${ragContext}`;
                 try {
                   const lastPlan = await db.query('SELECT version FROM workout_plans WHERE user_id = $1 ORDER BY version DESC LIMIT 1', [userId]);
                   const nextVersion = lastPlan.rowCount > 0 ? lastPlan.rows[0].version + 1 : 1;
+                  
+                  // Normalize all exercises to official catalog
+                  const sanitizedExercises = (functionArgs.exercises || []).map(ex => ({
+                    ...ex,
+                    name: normalizeToOfficialExercise(ex.name)
+                  }));
+
                   await db.query(
                     `INSERT INTO workout_plans (user_id, split, frequency, exercises, progression_scheme, generated_by, version)
                      VALUES ($1, $2, $3, $4, $5, 'AI', $6)`,
-                    [userId, functionArgs.split, functionArgs.frequency || 3, JSON.stringify(functionArgs.exercises), functionArgs.progression_scheme || 'Double Progression', nextVersion]
+                    [userId, functionArgs.split, functionArgs.frequency || 3, JSON.stringify(sanitizedExercises), functionArgs.progression_scheme || 'Double Progression', nextVersion]
                   );
                   toolResult = `Successfully updated workout plan to version ${nextVersion}.`;
                 } catch (e) {

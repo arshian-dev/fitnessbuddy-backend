@@ -3,6 +3,8 @@
  * Generates custom workout and nutrition plans based on the client health profile.
  */
 
+const { normalizeToOfficialExercise } = require('../utils/exerciseNormalizer');
+
 function generateWorkoutPlan(userId, profile, onboardingData, customSplitKey = null) {
   const conditions = onboardingData.conditions || [];
   const experience = onboardingData.experience || 'BEGINNER';
@@ -683,9 +685,11 @@ function generateWorkoutPlan(userId, profile, onboardingData, customSplitKey = n
       return 'bench-press';
     };
 
+    const officialName = normalizeToOfficialExercise(ex.name);
     return {
       ...ex,
-      imageId: ex.imageId || getExerciseId(ex.name),
+      name: officialName,
+      imageId: ex.imageId || getExerciseId(officialName),
       day: dayLabel
     };
   });
