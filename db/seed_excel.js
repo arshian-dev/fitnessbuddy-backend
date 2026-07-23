@@ -15,7 +15,7 @@ async function seedExcelData() {
     console.log('Creating Coach Account...');
     const coachRes = await db.query(
       `INSERT INTO users (name, email, role)
-       VALUES ('Coach Salman', 'coach@test.com', 'COACH') RETURNING id`
+       VALUES ('Coach Noroze Sikandar', 'coach@test.com', 'COACH') RETURNING id`
     );
     const coachId = coachRes.rows[0].id;
     console.log(`Coach created with ID: ${coachId}`);
