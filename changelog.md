@@ -22,14 +22,8 @@
 * **Light Mode Legibility**: Addressed multiple inconsistencies where text remained white on a white background during Light Mode, particularly fixing legibility in the `PlateCalculator.jsx`.
 * **Syntax Error Hotfix**: Diagnosed and repaired a build-breaking unterminated `<div>` syntax error in `ClientDashboard.jsx` following a rapid deployment.
 
-## 5. Client Accounts & Coach Roster Management (July 24, 2026)
-* **New Client Accounts**: Created and initialized 4 new client profiles in the PostgreSQL database:
-  * **Rozain**: `rozain@test.com` (Muscle Gain & Strength)
-  * **Nuqta**: `nuqta@test.com` (PCOS Management & Fat Loss)
-  * **Provit**: `provit@test.com` (Athletic Recomp & Performance)
-  * **Numa**: `numa@test.com` (Fat Loss & Body Toning)
-* **Coach Assignment**: Automatically linked all 4 client accounts to Coach Noroze Sikandar (`coach@test.com`) for direct roster management in the Coach Dashboard.
-* **Full Profile & Plan Seeding**: Computed health profiles (recovery scores, adherence probabilities, medical flags), generated custom workout splits and nutrition schedules, and seeded initial check-in logs using `create_requested_clients.js`.
-* **Flexible Re-Onboarding**: All newly added clients may re-take the onboarding questionnaire at any time to update their health profiles, dietary preferences, and workout splits according to their own needs.
-
-
+## 5. Official Exercise Library Implementation
+* **Hardcoded Exercise Library**: Created `exerciseNormalizer.js` with an official catalog of 31 approved exercises.
+* **Smart Input Normalization**: Added `normalizeToOfficialExercise` to intelligently map variations (e.g., "RDL", "push-up") to their official counterparts in the catalog.
+* **AI Hallucination Prevention**: Enforced strict rules in the `chat.js` AI system prompt requiring the model to exclusively use the 31 exercises from the official catalog when generating workout plans.
+* **Continuous Expansion & Animations**: We are constantly adding new exercises to the library and creating custom instructional animations for them to ensure users have the best visual guidance.

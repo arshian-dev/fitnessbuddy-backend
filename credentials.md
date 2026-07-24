@@ -11,10 +11,6 @@ Since authentication is handled via a **local passwordless email sign-in**, you 
 | Name | Role | Email | Profile Characteristics | Assigned Coach |
 | :--- | :--- | :--- | :--- | :--- |
 | **Coach Noroze Sikandar** | `COACH` | `coach@test.com` | Oversees all clients, manages exercise/food libraries, and overrides plans. | — |
-| **Rozain** | `CLIENT` | `rozain@test.com` | Muscle gain & strength focus. Full Body Gym split. | Coach Noroze Sikandar (`coach@test.com`) |
-| **Nuqta** | `CLIENT` | `nuqta@test.com` | PCOS management & fat loss focus. Home workout split & high stress adjustments. | Coach Noroze Sikandar (`coach@test.com`) |
-| **Provit** | `CLIENT` | `provit@test.com` | Athletic performance & body recomposition. 4-day gym split. | Coach Noroze Sikandar (`coach@test.com`) |
-| **Numa** | `CLIENT` | `numa@test.com` | Fat loss & body toning. Balanced macro targets & 45-60 min gym sessions. | Coach Noroze Sikandar (`coach@test.com`) |
 
 ---
 
